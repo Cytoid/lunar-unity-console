@@ -169,6 +169,15 @@ public final class NativeBridge {
         });
     }
 
+    public static void updateSettings(final String settingsJson) {
+        dispatchQueue.dispatch(new DispatchTask("update settings") {
+            @Override
+            protected void execute() {
+                plugin.updateSettings(settingsJson);
+            }
+        });
+    }
+
     public static void destroy() {
         dispatchQueue.dispatch(new DispatchTask("destroy plugin") {
             @Override

@@ -42,6 +42,7 @@ import spacemadness.com.lunarconsole.debug.Assert;
 import spacemadness.com.lunarconsole.debug.Log;
 import spacemadness.com.lunarconsole.dependency.PluginSettingsEditorProvider;
 import spacemadness.com.lunarconsole.dependency.Provider;
+import spacemadness.com.lunarconsole.json.JsonDecoder;
 import spacemadness.com.lunarconsole.settings.PluginSettings;
 import spacemadness.com.lunarconsole.settings.PluginSettingsEditor;
 import spacemadness.com.lunarconsole.settings.PluginSettingsIO;
@@ -217,6 +218,42 @@ public class ConsolePlugin implements NotificationCenter.OnNotificationListener,
         actionRegistry.unregisterAction(actionId);
     }
 
+    public void updateSettings(String settingsJson) {
+        try {
+            PluginSettings newSettings = JsonDecoder.decode(settingsJson, PluginSettings.class);
+            if (newSettings != null) {
+                settings = newSettings;
+                
+                // Update action registry settings
+                actionRegistry.setActionSortingEnabled(settings.sortActions);
+                actionRegistry.setVariableSortingEnabled(settings.sortVariables);
+                
+                // Update gesture recognition
+                if (settings.gesture == null) {
+                    disableGestureRecognition();
+                } else {
+                    enableGestureRecognition();
+                }
+                
+                // Update overlay
+                if (settings.logOverlay.enabled) {
+                    showOverlay();
+                } else {
+                    hideOverlay();
+                }
+                
+                // Save settings
+                PluginSettingsIO.save(getActivity(), settings);
+            }
+        } catch (Exception e) {
+            Log.e(e, "Exception while updating settings");
+        }
+    }
+
+    public void updateVariable(int variableId, String value) {
+        actionRegistry.updateVariable(variableId, value);
+    }
+
     //endregion
 
     //region Destroyable
@@ -244,14 +281,6 @@ public class ConsolePlugin implements NotificationCenter.OnNotificationListener,
         if (hasRange) {
             variable.setRange(rangeMin, rangeMax);
         }
-    }
-
-    //endregion
-
-    //region Overlay Dialog
-
-    public void updateVariable(int variableId, String value) {
-        actionRegistry.updateVariable(variableId, value);
     }
 
     @Override
@@ -429,7 +458,7 @@ public class ConsolePlugin implements NotificationCenter.OnNotificationListener,
 
     //endregion
 
-    //region Overlay view
+    //region Overlay Dialog
 
     private void showWarning(final CharSequence message) {
         try {
